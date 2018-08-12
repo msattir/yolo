@@ -215,81 +215,91 @@ class Darknet(nn.Module):
      return detections     
 
   def load_weights(self, weightfile):
-     fp = open(weightfile, "rb")
-     
-     #First 5 values are headers Major version, minor version, subversion, images during training
-     header = np.fromfile(fp, dtype=np.int32, count=5)
-     self.header = torch.from_numpy(header)
-     self.seen = self.header[3]
+      
+      #Open the weights file
+      fp = open(weightfile, "rb")
 
-     weights = np.fromfile(fp, dtype=np.float32)
-     ptr = 0
-     for i  in range(len(self.module_list)):
-        module_type = self.blocks[i+1]["type"]
-        #Load weights if layer is convolutional otherwise continue
-        if module_type == "convolutional":
-           model = self.module_list[i]
-           try:
-              batch_normalize = int(self.blocks[i+1]["batch_normalize"])
-           except:
-              batch_normalize = 0
-           conv = model[0]
+      #The first 4 values are header information 
+      # 1. Major version number
+      # 2. Minor Version Number
+      # 3. Subversion number 
+      # 4. IMages seen 
+      header = np.fromfile(fp, dtype = np.int32, count = 5)
+      self.header = torch.from_numpy(header)
+      self.seen = self.header[3]
+      
+      #The rest of the values are the weights
+      # Let's load them up
+      weights = np.fromfile(fp, dtype = np.float32)
+      
+      ptr = 0
+      for i in range(len(self.module_list)):
+          module_type = self.blocks[i + 1]["type"]
+          
+          if module_type == "convolutional":
+              model = self.module_list[i]
+              try:
+                  batch_normalize = int(self.blocks[i+1]["batch_normalize"])
+              except:
+                  batch_normalize = 0
+              
+              conv = model[0]
+              
+              if (batch_normalize):
+                  bn = model[1]
+                  
+                  #Get the number of weights of Batch Norm Layer
+                  num_bn_biases = bn.bias.numel()
+                  
+                  #Load the weights
+                  bn_biases = torch.from_numpy(weights[ptr:ptr + num_bn_biases])
+                  ptr += num_bn_biases
+                  
+                  bn_weights = torch.from_numpy(weights[ptr: ptr + num_bn_biases])
+                  ptr  += num_bn_biases
+                  
+                  bn_running_mean = torch.from_numpy(weights[ptr: ptr + num_bn_biases])
+                  ptr  += num_bn_biases
+                  
+                  bn_running_var = torch.from_numpy(weights[ptr: ptr + num_bn_biases])
+                  ptr  += num_bn_biases
+                  
+                  #Cast the loaded weights into dims of model weights. 
+                  bn_biases = bn_biases.view_as(bn.bias.data)
+                  bn_weights = bn_weights.view_as(bn.weight.data)
+                  bn_running_mean = bn_running_mean.view_as(bn.running_mean)
+                  bn_running_var = bn_running_var.view_as(bn.running_var)
 
-        if (batch_normalize):
-           bn = model[1]
- 
-           #Number of weights of Batch Norm Layer
-           num_bn_biases = bn.bias.numel()
-     
-           #Load Weights
-           bn_biases = torch.from_numpy(weights[ptr:ptr+num_bn_biases])
-           ptr += num_bn_biases
+                  #Copy the data to model
+                  bn.bias.data.copy_(bn_biases)
+                  bn.weight.data.copy_(bn_weights)
+                  bn.running_mean.copy_(bn_running_mean)
+                  bn.running_var.copy_(bn_running_var)
+              
+              else:
+                  #Number of biases
+                  num_biases = conv.bias.numel()
+              
+                  #Load the weights
+                  conv_biases = torch.from_numpy(weights[ptr: ptr + num_biases])
+                  ptr = ptr + num_biases
+                  
+                  #reshape the loaded weights according to the dims of the model weights
+                  conv_biases = conv_biases.view_as(conv.bias.data)
+                  
+                  #Finally copy the data
+                  conv.bias.data.copy_(conv_biases)
+                  
+                  
+              #Let us load the weights for the Convolutional layers
+              num_weights = conv.weight.numel()
+              
+              #Do the same as above for weights
+              conv_weights = torch.from_numpy(weights[ptr:ptr+num_weights])
+              ptr = ptr + num_weights
 
-           bn_weights = torch.from_numpy(weights[ptr:ptr+num_bn_biases])
-           ptr += num_bn_biases
-
-           bn_running_mean = torch.from_numpy(weights[ptr:ptr+num_bn_biases])
-           ptr += num_bn_biases
-
-           bn_running_var = torch.from_numpy(weights[ptr:ptr+num_bn_biases])
-           ptr += num_bn_biases
-     
-           #resize weights into dims of model weights.
-           bn_biases = bn_biases.view_as(bn.bias.data)
-           bn_weights = bn_weights.view_as(bn.weight.data)
-           bn_running_mean = bn_running_mean.view_as(bn.running_mean)
-           bn_running_var = bn_running_var.view_as(bn.running_var)
-
-           #Copy data to model
-           bn.bias.data.copy_(bn_biases)
-           bn.weight.data.copy_(bn_weights) 
-           bn.running_mean.copy_(bn_running_mean)
-           bn.running_var.copy_(bn_running_var)
-
-        else: #If not batch_norm load biases to cnn layer
-           #Number of biases
-           num_biases = conv.bias.numel()
-           
-           #Load the weights
-           conv_biases = torch.from_numpy(weights[ptr:ptr+num_biases])
-           ptr = ptr+num_biases
-
-           #reshape the loaded weights according to dims of model weights
-           conv_biases = conv_biases.view_as(conv.bias.data)
-
-           #Copy data 
-           conv.bias.data.copy_(conv_biases)
-
-        #Load CNN layer weights
-        num_weights = conv.weight.numel()
-        
-        #Do the same as above for weights
-        conv_weights = torch.from_numpy(weights[ptr:ptr+num_weights])
-        ptr = ptr +num_weights
-
-        conv_weights = conv_weights.view_as(conv.weight.data)
-        conv.weight.data.copy_(conv_weights)
-
+              conv_weights = conv_weights.view_as(conv.weight.data)
+              conv.weight.data.copy_(conv_weights)
 
            
 #model = Darknet("cfg/yolov3.cfg")
