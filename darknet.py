@@ -13,7 +13,7 @@ def get_test_input():
   img = cv2.imread("dog-cycle-car.png")
   img = cv2.resize(img, (416,416))  
   img_ = img[:,:,::-1].transpose((2,0,1)) #BGR -> RGB | H X W X C -> C X H X W
-  img_ = img_[np.newaxis,:,:,:]/255.0 #Channel at 0 and Normalize
+  img_ = img_[np.newaxis,:,:,:]/255.0 #Channel at 0 and Normalise
   img_ = torch.from_numpy(img_).float()
   img_ = Variable(img_)
   return img_
