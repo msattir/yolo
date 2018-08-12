@@ -130,7 +130,7 @@ for batch in im_batches:
      im_id = i*batch_size + im_num
      objs = [classes[int(x[-1])] for x in output if int(x[0]) == im_id]
      print ("{0:20s} predicted in {1:6.3f} seconds".format(image.split("/")[-1], (end - start)/batch_size))
-     print ("{0:20s} {1:s}".format("Objects Detected:", ""))
+     print ("{0:20s} {1:s}".format("Objects Detected:", "".join(objs)))
      print ("-----------------------")
   i+=1
 
@@ -159,7 +159,7 @@ for i in range(output.shape[0]):
   output[i, [1,3]] = torch.clamp(output[i, [1,3]], 0.0, im_dim_list[i,0])
   output[i, [2,4]] = torch.clamp(output[i, [2,4]], 0.0, im_dim_list[i,1])
 
-output_recase = time.time()
+output_recast = time.time()
 class_load = time.time()
 colors = pkl.load(open("pallete", "rb"))
 
@@ -171,7 +171,7 @@ def write(x, batches, results):
   img = results[int(x[0])]
   cls = int(x[-1])
   label = "{0}".format(classes[cls])
-  color = rendom.choice(colors)
+  color = random.choice(colors)
   cv2.rectangle(img, c1, c2, color, 1)
   t_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, 1, 1)[0]
   c2 = c1[0] + t_size[0] + 3, c1[1] + t_size[1] + 4
