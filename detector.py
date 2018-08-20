@@ -77,7 +77,6 @@ if not os.path.exists(args.det):
 load_batch = time.time()
 
 #PyTorch Variables for images
-print ("*********************", imlist)
 #batches = list(map(prep_image, imlist, [inp_dim for x in range(len(imlist))]))
 batches = list(map(prep_image, imlist, [inp_dim for x in range(len(imlist))]))
 im_batches = [x[0] for x in batches]

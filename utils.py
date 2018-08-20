@@ -180,16 +180,17 @@ def write_results(prediction, confidence, num_classes, nms_conf = 0.4):
            #Remove the non-zero enteries
            non_zero_ind = torch.nonzero(image_pred_class[:,4]).squeeze()
            image_pred_class = image_pred_class[non_zero_ind].view(-1,7)
-           batch_ind = image_pred_class.new(image_pred_class.size(0), 1).fill_(ind)
-           #Repeat batch_id for many detections of class in cls in image
-           seq = batch_ind, image_pred_class
 
-           if not write:
-              output = torch.cat(seq, 1)
-              write = True
-           else:
-              out = torch.cat(seq, 1)
-              output = torch.cat((output, out))
+        batch_ind = image_pred_class.new(image_pred_class.size(0), 1).fill_(ind)
+        #Repeat batch_id for many detections of class in cls in image
+        seq = batch_ind, image_pred_class
+
+        if not write:
+           output = torch.cat(seq, 1)
+           write = True
+        else:
+           out = torch.cat(seq, 1)
+           output = torch.cat((output, out))
 
   try:
      return output
