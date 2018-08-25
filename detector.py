@@ -14,6 +14,19 @@ import pickle as pkl
 import pandas as pd
 import random
 
+
+def get_test_input(input_dim, CUDA):
+  img = cv2.imread("dog-cycle-car.png")
+  img = cv2.resize(img, (input_dim, input_dim))   
+  img_ = img[:,:,::-1].transpose((2,0,1))
+  img_ = img_[np.newaxis,:,:,:]/255.0
+  img_ = torch.from_numpy(img_).float()
+  img_ = Variable(img_)
+
+  if CUDA:
+     img_ = img_.cuda()
+  return img_  
+
 def arg_parse():
 #arguments to detector module
 
@@ -98,6 +111,7 @@ if batch_size is not 1:
 
 i=0
 write = False
+model(get_test_input(inp_dim, CUDA), CUDA)
 start_det_loop = time.time()
 objs = {}
 
@@ -129,7 +143,7 @@ for batch in im_batches:
      im_id = i*batch_size + im_num
      objs = [classes[int(x[-1])] for x in output if int(x[0]) == im_id]
      print ("{0:20s} predicted in {1:6.3f} seconds".format(image.split("/")[-1], (end - start)/batch_size))
-     print ("{0:20s} {1:s}".format("Objects Detected:", "".join(objs)))
+     print ("{0:20s} {1:s}".format("Objects Detected:", " ".join(objs)))
      print ("-----------------------")
   i+=1
 

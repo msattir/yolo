@@ -135,7 +135,7 @@ def write_results(prediction, confidence, num_classes, nms_conf = 0.4):
   batch_size = prediction.size(0)
   write = False
   
-  for ind in range(batch_size):
+  for ind in range(batch_size): #For each image
      image_pred = prediction[ind]
      max_conf, max_conf_score = torch.max(image_pred[:,5:5+num_classes], 1)
      max_conf = max_conf.float().unsqueeze(1)
@@ -143,16 +143,17 @@ def write_results(prediction, confidence, num_classes, nms_conf = 0.4):
      seq = (image_pred[:,:5], max_conf, max_conf_score)
      image_pred = torch.cat(seq, 1) 
      non_zero_ind = (torch.nonzero(image_pred[:,4]))
+     image_pred_ = image_pred[non_zero_ind.squeeze(),:].view(-1,7)
      try:
-        image_pred_ = image_pred[non_zero_ind.squeeze(),:].view(-1,7)
+        img_classes = unique(image_pred_[:,-1]) #Get classes detected in image
      except:
         continue
-    
+
+    #image_pred_ removes all predictions whose max class is 0
      if image_pred_.shape[0] == 0:
         continue
      
      #Various classes detected in image
-     img_classes = unique(image_pred_[:,-1])
 
      for cls in img_classes:  #Perform NMS Classwise
         cls_mask = image_pred_*(image_pred_[:,-1] == cls).float().unsqueeze(1)
