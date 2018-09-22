@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 from utils import *
+from torchsummary import summary
 import numpy as np
 
 
@@ -301,7 +302,8 @@ class Darknet(nn.Module):
               conv_weights = conv_weights.view_as(conv.weight.data)
               conv.weight.data.copy_(conv_weights)
 
-           
+
+mod = Darknet("cfg/yolov3.cfg")           
 #model = Darknet("cfg/yolov3.cfg")
 #model.load_weights("yolov3.weights")
 #inp = get_test_input()
