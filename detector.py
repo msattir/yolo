@@ -13,6 +13,7 @@ from darknet import Darknet
 import pickle as pkl
 import pandas as pd
 import random
+from preprocess import gt_pred
 
 
 def get_test_input(input_dim, CUDA):
@@ -57,7 +58,7 @@ classes = load_classes("data/coco.names")
 #Setup the netowrk
 print("Loading Network .....")
 model = Darknet(args.cfgfile)
-model.load_weights(args.weightsfile)
+#model.load_weights(args.weightsfile)
 print("Network Loaded successfully ...")
 
 model.net_info["height"] = args.reso
@@ -70,7 +71,7 @@ if CUDA:
   model.cuda()
 
 #Set model to eval mode
-model.eval()
+model.train()
 
 #Reading input images
 read_dir = time.time()
@@ -123,6 +124,7 @@ for batch in im_batches:
   
   with torch.no_grad():
      prediction = model(Variable(batch), CUDA)
+     y_pred = gt_pred()
   prediction = write_results(prediction, confidence, num_classes, nms_conf = nms_thresh)
   
   if type(prediction) == int:
