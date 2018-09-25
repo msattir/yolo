@@ -13,11 +13,11 @@ def y_pred(filter_size, det, max_size, num_classes=1):
   p = 0
   for i in range(1,filter_size[0]):
      for j in range(1,filter_size[1]):
-        a1 = det[:,0]-jump_cell[0]*i > 0
+        a1 = det[:,0]-jump_cell[0]*i >= 0
         a2 = det[:,0]-jump_cell[0]*i < jump_cell[0]
-        b1 = det[:,1]-jump_cell[1]*j > 0
+        b1 = det[:,1]-jump_cell[1]*j >= 0
         b2 = det[:,1]-jump_cell[1]*j < jump_cell[1]
-        if any(a1*a2) and any(b1*b2):
+        if any((a1*a2)*(b1*b2)):
            loc_x = np.where(a1*a2)[0]
            loc_y = np.where(b1*b2)[0]
            loc = list(set(loc_x) & set(loc_y))
@@ -26,11 +26,11 @@ def y_pred(filter_size, det, max_size, num_classes=1):
            cy = (det[loc[0],1]-(jump_cell[1]*j))/jump_cell[1]
            class_prob = np.eye(num_classes)[det[loc[0],4]-1]
            predictions[p,:] = np.concatenate((np.array([1, cx, cy, det[loc[0],2], det[loc[0],3]]), class_prob))
-           print (predictions[p,:])
+           #print (predictions[p,:])
      p=p+1
   return predictions 
 
-def gt_pred():
+def gt_pred(img, filt):
   img = cv2.imread('datasets/I1_2009_09_08_drive_0004_000951.png')
   det = np.genfromtxt('datasets/my_csv.csv', delimiter=',')
   
@@ -65,7 +65,7 @@ def gt_pred():
   for i in range(0,det.shape[0]):
     cv2.circle(img2, (det2[i,0],det2[i,1]), 1, (255, 0, 0), 2)
   
-  pred=y_pred([13, 13], det2, [416, 416], 2)
+  pred=y_pred(filt, det2, [416, 416], 2)
   return (pred)
 #cv2.imshow('image', img2)
 #cv2.waitKey(0)

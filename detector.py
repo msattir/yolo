@@ -13,7 +13,7 @@ from darknet import Darknet
 import pickle as pkl
 import pandas as pd
 import random
-
+from preprocess import gt_pred
 
 def get_test_input(input_dim, CUDA):
   img = cv2.imread("dog-cycle-car.png")
@@ -122,6 +122,8 @@ for batch in im_batches:
      batch = batch.cuda()
   
   with torch.no_grad():
+     model.train()
+     y = torch.cat((torch.tensor(gt_pred(batch, [13, 13])), torch.tensor(gt_pred(batch, [26, 26])), torch.tensor(gt_pred(batch, [52, 52]))))
      prediction = model(Variable(batch), CUDA)
   prediction = write_results(prediction, confidence, num_classes, nms_conf = nms_thresh)
   
