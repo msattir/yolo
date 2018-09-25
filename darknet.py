@@ -156,6 +156,13 @@ class DetectionLayer(nn.Module):
      super(DetectionLayer, self).__init__()
      self.anchors = anchors
 
+  def forward(self, x, inp_dim, num_classes, confidence):
+     x = x.data
+     global CUDA
+     prediction = x
+     prediction = predict_transform(prediction, inp_dim, self.anchors, num_classes, confidence, CUDA)
+     return prediction
+
 
 class Darknet(nn.Module):
   def __init__(self, cfgfile):
