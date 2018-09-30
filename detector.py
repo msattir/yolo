@@ -123,7 +123,7 @@ for batch in im_batches:
   
   with torch.no_grad():
      model.train()
-     y = torch.cat((torch.tensor(gt_pred(batch, [13, 13])), torch.tensor(gt_pred(batch, [26, 26])), torch.tensor(gt_pred(batch, [52, 52]))))
+     y = torch.cat((torch.tensor(gt_pred(batch, [13, 13], [6, 7, 8])), torch.tensor(gt_pred(batch, [26, 26], [3, 4, 5])), torch.tensor(gt_pred(batch, [52, 52], [0, 1, 2]))))
      prediction = model(Variable(batch), CUDA)
   prediction = write_results(prediction, confidence, num_classes, nms_conf = nms_thresh)
   

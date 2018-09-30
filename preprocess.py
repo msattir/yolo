@@ -2,13 +2,19 @@ from __future__ import division
 import cv2
 import numpy as np
 from utils import letterbox_image2
+import torch
 
-def y_pred(filter_size, det, max_size, num_classes=1):
+def y_pred(filter_size, masks, det, max_size, num_classes=1):
+  anchors = [(10,13),  (16,30),  (33,23),  (30,61),  (62,45),  (59,119),  (116,90),  (156,198),  (373,326)]
+  anc_masks = []
+  anc_masks = [anchors[i] for i in masks]
+  anc_masks_aspect = [anc_masks[i][0]/anc_masks[i][1] for i in range(3)]
+  anc_masks_aspect = np.asarray(anc_masks_aspect)
   x_dir, y_dir = filter_size
   jump_cell = np.zeros(2)
   jump_cell[0] = max_size[0]/filter_size[0]
   jump_cell[1] = max_size[1]/filter_size[1]
-  predictions = np.zeros([filter_size[0]*filter_size[1], 5+num_classes])
+  predictions = np.zeros([3, filter_size[0]*filter_size[1], 5+num_classes])
   print (predictions.shape)
   p = 0
   for i in range(1,filter_size[0]):
@@ -21,16 +27,23 @@ def y_pred(filter_size, det, max_size, num_classes=1):
            loc_x = np.where(a1*a2)[0]
            loc_y = np.where(b1*b2)[0]
            loc = list(set(loc_x) & set(loc_y))
-           print (i,j,'---', (det[loc[0],0]-(jump_cell[0]*i))/jump_cell[0], (det[loc[0],1]-(jump_cell[1]*j))/jump_cell[1],det[loc[0],2], det[loc[0],3], int(det[loc[0],4]==1), int(det[loc[0],4]==2), det[loc[0],:]) #Doesn't handle 2 boxes in same cell
+           print (p,i,j,'---', (det[loc[0],0]-(jump_cell[0]*i))/jump_cell[0], (det[loc[0],1]-(jump_cell[1]*j))/jump_cell[1],det[loc[0],2], det[loc[0],3], int(det[loc[0],4]==1), int(det[loc[0],4]==2), det[loc[0],:]) #Doesn't handle 2 boxes in same cell
+           #check IOU of bbox with anc_masks and populate those 
+           
            cx = (det[loc[0],0]-(jump_cell[0]*i))/jump_cell[0]
            cy = (det[loc[0],1]-(jump_cell[1]*j))/jump_cell[1]
            class_prob = np.eye(num_classes)[det[loc[0],4]-1]
-           predictions[p,:] = np.concatenate((np.array([1, cx, cy, det[loc[0],2], det[loc[0],3]]), class_prob))
+           im_aspect = det[loc[0],2]/det[loc[0],3]
+           m = np.argmin(abs(anc_masks_aspect-im_aspect))
+           predictions[m, p,:] = np.concatenate((np.array([1, cx, cy, det[loc[0],2], det[loc[0],3]]), class_prob))
            #print (predictions[p,:])
-     p=p+1
-  return predictions 
+        p=p+1
+  
+  t_pred = torch.tensor(predictions)
 
-def gt_pred(img, filt):
+  return (torch.cat((t_pred[0,:,:], t_pred[1,:,:], t_pred[2,:,:]),0))
+
+def gt_pred(img, filt, masks):
   img = cv2.imread('datasets/I1_2009_09_08_drive_0004_000951.png')
   det = np.genfromtxt('datasets/my_csv.csv', delimiter=',')
   
@@ -65,7 +78,7 @@ def gt_pred(img, filt):
   for i in range(0,det.shape[0]):
     cv2.circle(img2, (det2[i,0],det2[i,1]), 1, (255, 0, 0), 2)
   
-  pred=y_pred(filt, det2, [416, 416], 2)
+  pred=y_pred(filt, masks, det2, [416, 416], 2)
   return (pred)
 #cv2.imshow('image', img2)
 #cv2.waitKey(0)
